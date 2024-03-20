@@ -1,0 +1,17 @@
+
+{
+  
+  "name": "ERC NFT",
+  "description": "A Car",
+  "image": "https://ipfs.filebase.io/ipfs/QmXgLtjVRLaoXcoJ1b2mgzddLGyPdPTGChshUWBcMvMk45",
+  "attributes": [
+    {
+      "trait_type": "Picture",
+      "value": 100
+    },
+    {
+      "trait_type": "Vehicle",
+      "color": "Dark Blue"
+    }
+  ]
+}
