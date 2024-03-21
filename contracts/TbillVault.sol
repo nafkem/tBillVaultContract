@@ -1,140 +1,112 @@
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
 
-pragma solidity ^0.8.0;
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./IERC20.sol";
-import "./ICErc20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+// import "./IERC20.sol";
+import "./tBillToken.sol";
 
-contract TBILLVault is ReentrancyGuard {
+contract TBillVault is ReentrancyGuard {
+    using SafeERC20 for IERC20;
 
-    address public owner;
-
-    // Import ERC20 interface
-    IERC20 private cUsdcToken;
-    IERC20 public cUsdcToken;
-    IERC20 public tbillToken;
-
-    bool private _notEntered; // Reentrancy guard
-
-    uint256 public totalInvested;
-    uint256 public totalYield;
-
-    mapping(address => uint256) public balances;
-    mapping(address => uint256) public tbillTokenBalance;
-    mapping(address => uint256) public yieldAccrued;
-    mapping(address => uint256) public lastYieldCalculation;
-
-    event Deposit(address indexed investor, uint256 amount);
-    event Redemption(address indexed investor, uint256 amount);
-    event YieldAccrued(address indexed investor, uint256 yield);
-    event YieldDistributed(address indexed investor, uint256 yield);
-
-    constructor(address _cUsdcToken, address _tbillToken) {
-        owner = msg.sender;
-        cUsdcToken = IERC20(_cUsdcToken);
-        cUsdc = ICErc20(_cUsdcToken);
-        tbillToken = IERC20(_tbillToken);
-    }
-    modifier nonReentrant() {
-        // Ensure no reentrancy
-        require(_notEntered, "Reentrant call");
-        _notEntered = false;
-        _;
-        _notEntered = true;
+    struct Investor {
+        uint256 depositedAmount; // Amount of USDC/cUSD deposited by the investor
+        uint256 tbillBalance; // TBILL TOKEN balance of the investor
+        uint256 yieldEarned; // Yield earned by the investor
+        uint256 lastYieldUpdate; // Timestamp of the last yield update
     }
 
-    function deposit(uint256 amount) external nonReentrant {
-        require(amount > 0, "Amount must be greater than zero");
-        require(cUsdcToken.allowance(msg.sender, address(this)) >= amount, "Insufficient allowance");
+    mapping(address => Investor) public investors;
+    address[] public investorAddresses; // Array to store investor addresses
 
-        // Ensure the token is not transferable
-        require(!isTokenTransferable(cUsdcToken), "Token is transferable");
+    IERC20 public cusdcToken;
+    TBILLToken public tbillToken;
 
-        // Transfer cUSDC from investor to the vault
-        require(cUsdcToken.transferFrom(msg.sender, address(this), amount), "Transfer failed");
+    uint256 public yieldRate; // Annual yield rate in percentage
+    uint256 public lastYieldUpdate; // Timestamp of the last global yield update
 
-        // Mint TBILL tokens to the investor
-        balances[msg.sender] += amount;
+    event Deposit(address indexed account, uint256 amount);
+    event Withdraw(address indexed account, uint256 amount);
+    event Redeem(address indexed account, uint256 amount);
+    event YieldUpdated(uint256 newRate);
 
-        totalInvested += amount;
+    constructor(address _cusdcToken, address _tbillToken, uint256 _yieldRate) {
+        cusdcToken = IERC20(_cusdcToken);
+        tbillToken = TBILLToken(_tbillToken);
+        yieldRate = _yieldRate;
+        lastYieldUpdate = block.timestamp;
+    }
+
+    function deposit(uint256 amount) external {
+        require(amount > 0, "Deposit amount must be greater than zero");
+        // Transfer USDC/cUSD from user to this contract
+        cusdcToken.safeTransferFrom(msg.sender, address(this), amount);
+        // Mint TBILL tokens to the depositor based on the deposited amount
+        tbillToken.mint(msg.sender, amount);
+        // Update investor's records
+        Investor storage investor = investors[msg.sender];
+        investor.depositedAmount += amount;
+        investor.tbillBalance += amount;
+        investor.lastYieldUpdate = block.timestamp;
+
+        if (investor.depositedAmount == amount) {
+            // If this is the first deposit for the investor, add their address to the array
+            investorAddresses.push(msg.sender);
+        }
 
         emit Deposit(msg.sender, amount);
     }
 
+    function withdraw(uint256 amount) external nonReentrant {
+        require(amount > 0, "Withdrawal amount must be greater than zero");
+        require(
+            investors[msg.sender].tbillBalance >= amount,
+            "Insufficient TBILL balance"
+        );
+        // // Burn TBILL tokens from the withdrawer
+        tbillToken.burn(msg.sender, amount);
+        // Transfer USDC/cUSD from this contract to user
+        cusdcToken.safeTransfer(msg.sender, amount);
+        // Update investor's records
+        investors[msg.sender].depositedAmount -= amount;
+        investors[msg.sender].tbillBalance -= amount;
+        investors[msg.sender].lastYieldUpdate = block.timestamp;
+
+        emit Withdraw(msg.sender, amount);
+    }
+
     function redeem(uint256 amount) external nonReentrant {
-        require(amount > 0, "Amount must be greater than zero");
-        require(balances[msg.sender] >= amount, "Insufficient balance");
+        require(amount > 0, "Redeem amount must be greater than zero");
+        require(
+            investors[msg.sender].tbillBalance >= amount,
+            "Insufficient TBILL balance"
+        );
+        // Burn TBILL tokens from the redeemer
+        // tbillToken.burn(msg.sender, amount);
+        // Transfer USDC/cUSD from this contract to user
+        cusdcToken.safeTransfer(msg.sender, amount);
+        // Update investor's records
+        investors[msg.sender].depositedAmount -= amount;
+        investors[msg.sender].tbillBalance -= amount;
+        investors[msg.sender].lastYieldUpdate = block.timestamp;
 
-        // Ensure the token is not transferable
-        require(!isTokenTransferable(cUsdcToken), "Token is transferable");
-
-        // Burn cUSDC tokens from the investor
-        require(cUsdc.redeemUnderlying(amount) == 0, "Redeem failed");
-
-        // Transfer cUSDC to the investor
-        require(cUsdcToken.transfer(msg.sender, amount), "Transfer failed");
-
-        balances[msg.sender] -= amount;
-
-        emit Redemption(msg.sender, amount);
+        emit Redeem(msg.sender, amount);
     }
 
-    function calculateYield() external {
-        uint256 currentTime = block.timestamp;
-
-        // Calculate yield for each investor since the last calculation
-        for (uint256 i = 0; i < investorCount; i++) {
-            address investor = investors[i];
-            uint256 timeElapsed = currentTime - lastYieldCalculation[investor];
-            uint256 investorBalance = balances[investor];
-            uint256 yieldGenerated = calculateYieldForInvestor(investor, timeElapsed, investorBalance);
-            
-            yieldAccrued[investor] += yieldGenerated;
-            lastYieldCalculation[investor] = currentTime;
-            
-            totalYield += yieldGenerated;
-            
-            emit YieldAccrued(investor, yieldGenerated);
+    function updateYield() external {
+        uint256 elapsedTime = block.timestamp - lastYieldUpdate;
+        uint256 totalYield = 0;
+        for (uint256 i = 0; i < investorAddresses.length; i++) {
+            Investor storage investor = investors[investorAddresses[i]];
+            uint256 yieldEarned = (investor.depositedAmount *
+                yieldRate *
+                elapsedTime) / (365 days * 100);
+            investor.yieldEarned += yieldEarned;
+            totalYield += yieldEarned;
         }
+
+        lastYieldUpdate = block.timestamp;
+
+        emit YieldUpdated(totalYield);
     }
-
-    function distributeYield() external {
-        for (uint256 i = 0; i < investorCount; i++) {
-            address investor = investors[i];
-            uint256 yieldToDistribute = yieldAccrued[investor];
-            if (yieldToDistribute > 0) {
-                uint256 investorProportion = (balances[investor] * 100) / totalInvested; // Calculate investor's proportion
-                uint256 yieldForInvestor = (yieldToDistribute * investorProportion) / 100; // Distribute yield based on proportion
-                
-                require(tbillToken.transfer(investor, yieldForInvestor), "Transfer failed");
-                
-                yieldAccrued[investor] = 0;
-                
-                emit YieldDistributed(investor, yieldForInvestor);
-            }
-        }
-    }
-    function calculateYieldForInvestor(address investor, uint256 timeElapsed, uint256 balance) internal returns (uint256) {
-    uint256 totalYieldGenerated = 0;
-
-    // Simulated T-Bills data - maturity dates and interest rates
-    uint256[] memory maturityDates = [timestamp1, timestamp2, timestamp3]; // Replace timestamps with actual maturity dates
-    uint256[] memory interestRates = [5, 6, 7]; // Replace interest rates with actual rates (in percentage)
-
-    for (uint256 i = 0; i < maturityDates.length; i++) {
-        // Calculate time remaining until maturity
-        uint256 remainingTime = maturityDates[i] > block.timestamp ? maturityDates[i] - block.timestamp : 0;
-
-        // Calculate yield for this T-Bill
-        uint256 yieldRate = (interestRates[i] * balance) / 100;
-        uint256 yield = yieldRate * remainingTime;
-
-        // Accumulate total yield generated
-        totalYieldGenerated += yield;
-    }
-
-    return totalYieldGenerated;
 }
-}
-
