@@ -50,6 +50,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Address__factory>;
     getContractFactory(
+      name: "ReentrancyGuard",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.ReentrancyGuard__factory>;
+    getContractFactory(
       name: "CUSDToken",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.CUSDToken__factory>;
@@ -58,13 +62,13 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IERC20__factory>;
     getContractFactory(
-      name: "TBillVault",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.TBillVault__factory>;
-    getContractFactory(
       name: "TBILLToken",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.TBILLToken__factory>;
+    getContractFactory(
+      name: "TBillVault",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.TBillVault__factory>;
 
     getContractAt(
       name: "IERC1155Errors",
@@ -112,6 +116,11 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.Address>;
     getContractAt(
+      name: "ReentrancyGuard",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.ReentrancyGuard>;
+    getContractAt(
       name: "CUSDToken",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
@@ -122,15 +131,15 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.IERC20>;
     getContractAt(
-      name: "TBillVault",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.TBillVault>;
-    getContractAt(
       name: "TBILLToken",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.TBILLToken>;
+    getContractAt(
+      name: "TBillVault",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.TBillVault>;
 
     deployContract(
       name: "IERC1155Errors",
@@ -169,6 +178,10 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Address>;
     deployContract(
+      name: "ReentrancyGuard",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ReentrancyGuard>;
+    deployContract(
       name: "CUSDToken",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.CUSDToken>;
@@ -177,13 +190,13 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IERC20>;
     deployContract(
-      name: "TBillVault",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.TBillVault>;
-    deployContract(
       name: "TBILLToken",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.TBILLToken>;
+    deployContract(
+      name: "TBillVault",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.TBillVault>;
 
     deployContract(
       name: "IERC1155Errors",
@@ -231,6 +244,11 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Address>;
     deployContract(
+      name: "ReentrancyGuard",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.ReentrancyGuard>;
+    deployContract(
       name: "CUSDToken",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -241,15 +259,15 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IERC20>;
     deployContract(
-      name: "TBillVault",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.TBillVault>;
-    deployContract(
       name: "TBILLToken",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.TBILLToken>;
+    deployContract(
+      name: "TBillVault",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.TBillVault>;
 
     // default types
     getContractFactory(

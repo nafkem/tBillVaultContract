@@ -24,9 +24,11 @@ export type { SafeERC20 } from "./@openzeppelin/contracts/token/ERC20/utils/Safe
 export { SafeERC20__factory } from "./factories/@openzeppelin/contracts/token/ERC20/utils/SafeERC20__factory";
 export type { Address } from "./@openzeppelin/contracts/utils/Address";
 export { Address__factory } from "./factories/@openzeppelin/contracts/utils/Address__factory";
-export type { CUSDToken } from "./contracts/ERC20Token.sol/CUSDToken";
-export { CUSDToken__factory } from "./factories/contracts/ERC20Token.sol/CUSDToken__factory";
-export type { TBillVault } from "./contracts/tBill.sol/TBillVault";
-export { TBillVault__factory } from "./factories/contracts/tBill.sol/TBillVault__factory";
+export type { ReentrancyGuard } from "./@openzeppelin/contracts/utils/ReentrancyGuard";
+export { ReentrancyGuard__factory } from "./factories/@openzeppelin/contracts/utils/ReentrancyGuard__factory";
+export type { CUSDToken } from "./contracts/ERC20.sol/CUSDToken";
+export { CUSDToken__factory } from "./factories/contracts/ERC20.sol/CUSDToken__factory";
 export type { TBILLToken } from "./contracts/tBillToken.sol/TBILLToken";
 export { TBILLToken__factory } from "./factories/contracts/tBillToken.sol/TBILLToken__factory";
+export type { TBillVault } from "./contracts/TbillVault.sol/TBillVault";
+export { TBillVault__factory } from "./factories/contracts/TbillVault.sol/TBillVault__factory";

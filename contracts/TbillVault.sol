@@ -2,12 +2,16 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-// import "./IERC20.sol";
+
+import "./ERC20Token.sol";
 import "./tBillToken.sol";
 
 contract TBillVault is ReentrancyGuard {
     using SafeERC20 for IERC20;
+
+    address public owner;
 
     struct Investor {
         uint256 depositedAmount; // Amount of USDC/cUSD deposited by the investor
@@ -19,8 +23,8 @@ contract TBillVault is ReentrancyGuard {
     mapping(address => Investor) public investors;
     address[] public investorAddresses; // Array to store investor addresses
 
-    IERC20 public cusdcToken;
-    TBILLToken public tbillToken;
+    address public cusdcToken;
+    address public tbillToken;
 
     uint256 public yieldRate; // Annual yield rate in percentage
     uint256 public lastYieldUpdate; // Timestamp of the last global yield update
@@ -31,8 +35,8 @@ contract TBillVault is ReentrancyGuard {
     event YieldUpdated(uint256 newRate);
 
     constructor(address _cusdcToken, address _tbillToken, uint256 _yieldRate) {
-        cusdcToken = IERC20(_cusdcToken);
-        tbillToken = TBILLToken(_tbillToken);
+        cusdcToken = (_cusdcToken);
+        tbillToken = (_tbillToken);
         yieldRate = _yieldRate;
         lastYieldUpdate = block.timestamp;
     }
@@ -40,16 +44,21 @@ contract TBillVault is ReentrancyGuard {
     function deposit(uint256 amount) external {
         require(amount > 0, "Deposit amount must be greater than zero");
         // Transfer USDC/cUSD from user to this contract
-        cusdcToken.safeTransferFrom(msg.sender, address(this), amount);
-        // Mint TBILL tokens to the depositor based on the deposited amount
-        tbillToken.mint(msg.sender, amount);
+        IERC20 cusdcContract = IERC20(cusdcToken);
+        TBILLToken tBillContract = TBILLToken(tbillToken);
+        require(
+            cusdcContract.transferFrom(msg.sender, address(this), amount),
+            "failed to transfer"
+        );
         // Update investor's records
         Investor storage investor = investors[msg.sender];
         investor.depositedAmount += amount;
         investor.tbillBalance += amount;
         investor.lastYieldUpdate = block.timestamp;
+        // Mint TBILL tokens to the depositor based on the deposited amount
+        tBillContract.mint(msg.sender, amount);
 
-        if (investor.depositedAmount == amount) {
+        if (investor.depositedAmount > 0) {
             // If this is the first deposit for the investor, add their address to the array
             investorAddresses.push(msg.sender);
         }
@@ -63,14 +72,12 @@ contract TBillVault is ReentrancyGuard {
             investors[msg.sender].tbillBalance >= amount,
             "Insufficient TBILL balance"
         );
-        // // Burn TBILL tokens from the withdrawer
-        tbillToken.burn(msg.sender, amount);
-        // Transfer USDC/cUSD from this contract to user
-        cusdcToken.safeTransfer(msg.sender, amount);
         // Update investor's records
         investors[msg.sender].depositedAmount -= amount;
         investors[msg.sender].tbillBalance -= amount;
         investors[msg.sender].lastYieldUpdate = block.timestamp;
+        // Transfer USDC/cUSD from this contract to user
+        cusdcContract.safeTransfer(msg.sender, amount);
 
         emit Withdraw(msg.sender, amount);
     }
@@ -81,15 +88,11 @@ contract TBillVault is ReentrancyGuard {
             investors[msg.sender].tbillBalance >= amount,
             "Insufficient TBILL balance"
         );
-        // Burn TBILL tokens from the redeemer
-        // tbillToken.burn(msg.sender, amount);
-        // Transfer USDC/cUSD from this contract to user
-        cusdcToken.safeTransfer(msg.sender, amount);
-        // Update investor's records
-        investors[msg.sender].depositedAmount -= amount;
+        investors[msg.sender].depositedAmount += amount;
         investors[msg.sender].tbillBalance -= amount;
         investors[msg.sender].lastYieldUpdate = block.timestamp;
-
+        // Transfer USDC/cUSD from this contract to user
+        cusdcContract.transfer(msg.sender, amount);
         emit Redeem(msg.sender, amount);
     }
 
@@ -100,7 +103,7 @@ contract TBillVault is ReentrancyGuard {
             Investor storage investor = investors[investorAddresses[i]];
             uint256 yieldEarned = (investor.depositedAmount *
                 yieldRate *
-                elapsedTime) / (365 days * 100);
+                elapsedTime) / (90 days * 100);
             investor.yieldEarned += yieldEarned;
             totalYield += yieldEarned;
         }
