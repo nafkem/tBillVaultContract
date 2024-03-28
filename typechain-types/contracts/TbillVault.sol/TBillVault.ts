@@ -31,11 +31,11 @@ export interface TBillVaultInterface extends Interface {
       | "investorAddresses"
       | "investors"
       | "lastYieldUpdate"
+      | "owner"
       | "redeem"
       | "tbillToken"
       | "updateYield"
       | "withdraw"
-      | "yieldRate"
   ): FunctionFragment;
 
   getEvent(
@@ -62,6 +62,7 @@ export interface TBillVaultInterface extends Interface {
     functionFragment: "lastYieldUpdate",
     values?: undefined
   ): string;
+  encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "redeem",
     values: [BigNumberish]
@@ -78,7 +79,6 @@ export interface TBillVaultInterface extends Interface {
     functionFragment: "withdraw",
     values: [BigNumberish]
   ): string;
-  encodeFunctionData(functionFragment: "yieldRate", values?: undefined): string;
 
   decodeFunctionResult(functionFragment: "cusdcToken", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "deposit", data: BytesLike): Result;
@@ -91,6 +91,7 @@ export interface TBillVaultInterface extends Interface {
     functionFragment: "lastYieldUpdate",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "redeem", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "tbillToken", data: BytesLike): Result;
   decodeFunctionResult(
@@ -98,7 +99,6 @@ export interface TBillVaultInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "yieldRate", data: BytesLike): Result;
 }
 
 export namespace DepositEvent {
@@ -220,6 +220,8 @@ export interface TBillVault extends BaseContract {
 
   lastYieldUpdate: TypedContractMethod<[], [bigint], "view">;
 
+  owner: TypedContractMethod<[], [string], "view">;
+
   redeem: TypedContractMethod<[amount: BigNumberish], [void], "nonpayable">;
 
   tbillToken: TypedContractMethod<[], [string], "view">;
@@ -227,8 +229,6 @@ export interface TBillVault extends BaseContract {
   updateYield: TypedContractMethod<[], [void], "nonpayable">;
 
   withdraw: TypedContractMethod<[amount: BigNumberish], [void], "nonpayable">;
-
-  yieldRate: TypedContractMethod<[], [bigint], "view">;
 
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
@@ -261,6 +261,9 @@ export interface TBillVault extends BaseContract {
     nameOrSignature: "lastYieldUpdate"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
+    nameOrSignature: "owner"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
     nameOrSignature: "redeem"
   ): TypedContractMethod<[amount: BigNumberish], [void], "nonpayable">;
   getFunction(
@@ -272,9 +275,6 @@ export interface TBillVault extends BaseContract {
   getFunction(
     nameOrSignature: "withdraw"
   ): TypedContractMethod<[amount: BigNumberish], [void], "nonpayable">;
-  getFunction(
-    nameOrSignature: "yieldRate"
-  ): TypedContractMethod<[], [bigint], "view">;
 
   getEvent(
     key: "Deposit"
